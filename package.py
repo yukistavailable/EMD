@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--save_dir',
         type=str,
-        default='experiment/content_data')
+        default='experiment/style_data')
     parser.add_argument('--train_test_split_ratio', type=float, default=0.2)
     args = parser.parse_args()
     package(dir=args.dir, save_dir=args.save_dir,

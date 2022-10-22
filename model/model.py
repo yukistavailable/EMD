@@ -12,7 +12,6 @@ class EMD(nn.Module):
             style_input_nc=1,
             ngf=64,
             gpu_id='cuda',
-            is_training=True,
     ):
         super(EMD, self).__init__()
         self.content_input_nc = content_input_nc

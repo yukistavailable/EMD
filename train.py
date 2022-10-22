@@ -51,10 +51,10 @@ def main(
         style_data_dir = os.path.join(experiment_dir, "style_data")
     if check_point_dir is None:
         check_point_dir = os.path.join(experiment_dir, "check_point")
-        chkormakedir(check_point_dir)
+    chkormakedir(check_point_dir)
     if sample_dir is None:
         sample_dir = os.path.join(experiment_dir, "sample")
-        chkormakedir(sample_dir)
+    chkormakedir(sample_dir)
 
     start_time = time.time()
 
@@ -63,15 +63,14 @@ def main(
         style_input_nc=style_input_nc,
         ngf=ngf,
         gpu_id=gpu_id,
-        is_training=True)
-    if gpu_id:
-        model.to(gpu_id)
+    )
+    device_id = 'cpu' if gpu_id is not None else gpu_id
+    model.to(device_id)
     model.train()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     l1_loss = nn.L1Loss()
-    if gpu_id:
-        l1_loss.cuda()
+    l1_loss.to(device_id)
 
     model.print_networks(True)
 
@@ -96,8 +95,8 @@ def main(
         batch_size=batch_size,
         shuffle=False)
 
-    for epoch in range(epoch):
-        epoch += start_epoch
+    for _epoch in range(epoch):
+        _epoch += start_epoch
         # generate train dataset every epoch so that different styles of saved
         # char imgs can be trained.
 
@@ -125,11 +124,13 @@ def main(
                     batch_size=batch_size,
                     shuffle=True).__iter__()
                 style_batch = next(style_dataloader_iter)
-            ground_truth = content_batch[0].to(gpu_id)
-            x = model(content_batch[1].to(gpu_id), style_batch.to(gpu_id))
+            ground_truth = content_batch[0].to(device_id)
+            x = model(
+                content_batch[1].to(device_id),
+                style_batch.to(device_id))
             if x is None:
                 print(
-                    f'Epoch {epoch} batch {bid} failed due to inconsistent batch size')
+                    f'Epoch {_epoch} batch {bid} failed due to inconsistent batch size')
                 continue
             loss = l1_loss(ground_truth, x)
             optimizer.zero_grad()
@@ -139,15 +140,15 @@ def main(
             if bid % 500 == 0:
                 passed = time.time() - start_time
                 print(
-                    f'Epoch: {epoch}, bid: {bid}, total_batches: {total_batches}, passed: {passed}, L1 Loss: {loss.item()}')
+                    f'Epoch: {_epoch}, bid: {bid}, total_batches: {total_batches}, passed: {passed}, L1 Loss: {loss.item()}')
 
-            if epoch % check_point_steps == 0 and bid == 0:
+            if _epoch % check_point_steps == 0 and bid == 0:
                 model.save_networks(
                     save_dir=check_point_dir,
-                    epoch=epoch)
-                print("Checkpoint: save checkpoint step %d" % epoch)
+                    epoch=_epoch)
+                print("Checkpoint: save checkpoint step %d" % _epoch)
 
-            if epoch % sample_steps == 0 and bid == 0:
+            if _epoch % sample_steps == 0 and bid == 0:
                 val_style_dataloader_iter = DataLoader(
                     val_style_dataset,
                     batch_size=batch_size,
@@ -161,13 +162,13 @@ def main(
                             shuffle=False).__iter__()
                         style_val = next(val_style_dataloader_iter)
                     ground_truth_val = val_batch[0]
-                    content_val = val_batch[1].to(gpu_id)
-                    basename = os.path.join(sample_dir, str(epoch))
+                    content_val = val_batch[1].to(device_id)
+                    basename = os.path.join(sample_dir, str(_epoch))
                     chkormakedir(basename)
                     model.sample(
-                        content_val, style_val.to(gpu_id), basename)
-                print("Sample: sample step %d" % epoch)
-        if (epoch + 1) % schedule == 0:
+                        content_val, style_val.to(device_id), basename)
+                print("Sample: sample step %d" % _epoch)
+        if (_epoch + 1) % schedule == 0:
             update_lr(optimizer_params=optimizer.param_groups)
 
     val_style_dataloader_iter = DataLoader(
@@ -175,7 +176,7 @@ def main(
         batch_size=batch_size,
         shuffle=False).__iter__()
     for vbid, val_batch in enumerate(val_content_dataloader):
-        style_val = next(val_style_dataloader_iter).to(gpu_id)
+        style_val = next(val_style_dataloader_iter).to(device_id)
         if len(style_val) < batch_size:
             val_style_dataloader_iter = DataLoader(
                 val_style_dataset,
@@ -183,14 +184,14 @@ def main(
                 shuffle=False).__iter__()
             style_val = next(val_style_dataloader_iter)
         ground_truth_val = val_batch[0]
-        content_val = val_batch[1].to(gpu_id)
-        basename = os.path.join(sample_dir, str(epoch))
+        content_val = val_batch[1].to(device_id)
+        basename = os.path.join(sample_dir, str(_epoch))
         chkormakedir(basename)
         model.sample(
             content_val, style_val, basename)
-        print("Checkpoint: save checkpoint step %d" % epoch)
+        print("Checkpoint: save checkpoint step %d" % _epoch)
 
-    model.save_networks(save_dir=check_point_dir, epoch=epoch)
+    model.save_networks(save_dir=check_point_dir, epoch=_epoch)
 
 
 if __name__ == '__main__':
@@ -201,17 +202,21 @@ if __name__ == '__main__':
         help='experiment directory, content_data, style_data samples,checkpoints,etc')
     parser.add_argument(
         '--content_data_dir',
-        default='content_data',
+        default=None,
         help='experiment directory, content_data, samples,checkpoints,etc')
     parser.add_argument(
         '--style_data_dir',
-        default='style_data',
+        default=None,
         help='experiment directory, content_data, samples,checkpoints,etc')
     parser.add_argument(
         '--check_point_dir',
-        default='check_point',
+        default=None,
         help='experiment directory, content_data, samples,checkpoints,etc')
-    parser.add_argument('--gpu_id', default='cuda', help="GPUs")
+    parser.add_argument(
+        '--sample_dir',
+        default=None,
+        help='experiment directory, content_data, samples,checkpoints,etc')
+    parser.add_argument('--gpu_id', default=None, help="GPUs")
     parser.add_argument('--image_size', type=int, default=256,
                         help="size of your input and output image")
     parser.add_argument(

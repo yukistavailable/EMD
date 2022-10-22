@@ -1,4 +1,5 @@
 import os
+import glob
 
 import numpy as np
 
@@ -331,7 +332,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Font2Img')
     parser.add_argument('--charset', type=str, default='JP')
     parser.add_argument('--font', type=str, default='JP')
-    parser.add_argument('--fonts', default=[], nargs='+')
+    parser.add_argument('--fonts', default=[], nargs='*', type=str)
     parser.add_argument('--sample_dir', type=str, default='style_dir')
     parser.add_argument('--sample_count', type=int, default=2100)
     parser.add_argument('--shuffle', type=bool, default=True)

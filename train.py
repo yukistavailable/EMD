@@ -137,13 +137,13 @@ def main(
                 print(
                     f'Epoch: {epoch}, bid: {bid}, total_batches: {total_batches}, passed: {passed}, L1 Loss: {loss.item()}')
 
-            if epoch % check_point_steps == 0:
+            if epoch % check_point_steps == 0 and bid == 0:
                 model.save_networks(
                     save_dir=check_point_dir,
                     epoch=epoch)
                 print("Checkpoint: save checkpoint step %d" % epoch)
 
-            if epoch % sample_steps == 0:
+            if epoch % sample_steps == 0 and bid == 0:
                 val_style_dataloader_iter = val_style_dataloader.__iter__()
                 for vbid, val_batch in enumerate(val_content_dataloader):
                     style_val = next(val_style_dataloader_iter)

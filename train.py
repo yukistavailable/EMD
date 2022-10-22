@@ -127,6 +127,10 @@ def main(
                 style_batch = next(style_dataloader_iter)
             ground_truth = content_batch[0].to(gpu_id)
             x = model(content_batch[1].to(gpu_id), style_batch)
+            if x is None:
+                print(
+                    f'Epoch {epoch} batch {bid} failed due to inconsistent batch size')
+                continue
             loss = l1_loss(ground_truth, x)
             optimizer.zero_grad()
             loss.backward()
@@ -144,11 +148,17 @@ def main(
                 print("Checkpoint: save checkpoint step %d" % epoch)
 
             if epoch % sample_steps == 0 and bid == 0:
-                val_style_dataloader_iter = val_style_dataloader.__iter__()
+                val_style_dataloader_iter = DataLoader(
+                    val_style_dataset,
+                    batch_size=batch_size,
+                    shuffle=False).__iter__()
                 for vbid, val_batch in enumerate(val_content_dataloader):
                     style_val = next(val_style_dataloader_iter)
                     if len(style_val) < batch_size:
-                        val_style_dataloader_iter = val_style_dataloader.__iter__()
+                        val_style_dataloader_iter = DataLoader(
+                            val_style_dataset,
+                            batch_size=batch_size,
+                            shuffle=False).__iter__()
                         style_val = next(val_style_dataloader_iter)
                     ground_truth_val = val_batch[0]
                     content_val = val_batch[1].to(gpu_id)
@@ -160,9 +170,18 @@ def main(
         if (epoch + 1) % schedule == 0:
             update_lr(optimizer_params=optimizer.param_groups)
 
-    val_style_dataloader_iter = val_style_dataloader.__iter__()
+    val_style_dataloader_iter = DataLoader(
+        val_style_dataset,
+        batch_size=batch_size,
+        shuffle=False).__iter__()
     for vbid, val_batch in enumerate(val_content_dataloader):
         style_val = next(val_style_dataloader_iter).to(gpu_id)
+        if len(style_val) < batch_size:
+            val_style_dataloader_iter = DataLoader(
+                val_style_dataset,
+                batch_size=batch_size,
+                shuffle=False).__iter__()
+            style_val = next(val_style_dataloader_iter)
         ground_truth_val = val_batch[0]
         content_val = val_batch[1].to(gpu_id)
         basename = os.path.join(sample_dir, str(epoch))

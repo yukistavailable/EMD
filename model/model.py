@@ -53,6 +53,8 @@ class EMD(nn.Module):
         count = 0
         with torch.no_grad():
             output = self.forward(content, style)
+            if output is None:
+                return None
             for _output in output:
                 vutils.save_image(
                     _output,
@@ -235,7 +237,9 @@ class Decoder(nn.Module):
         """
         batch_size, _, _, _ = content.shape
         batch_size_, _, _, _ = style.shape
-        assert batch_size == batch_size_, f"batch size of content and style must be equal. {batch_size} != {batch_size_}"
+        # assert batch_size == batch_size_, f"batch size of content and style must be equal. {batch_size} != {batch_size_}"
+        if batch_size != batch_size_:
+            return None
 
         _style = torch.reshape(style, (batch_size, 512))
         _content = torch.reshape(content, (batch_size, 512))

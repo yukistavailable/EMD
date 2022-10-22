@@ -1,16 +1,71 @@
+import os
 import torch
 import torch.nn as nn
 from torchinfo import summary
+import torchvision.utils as vutils
 
 
 class EMD(nn.Module):
-    def __init__(self, input_nc=1, output_nc=1, ngf=64):
+    def __init__(
+            self,
+            content_input_nc=1,
+            style_input_nc=1,
+            ngf=64,
+            gpu_id='cuda',
+            is_training=True,
+    ):
         super(EMD, self).__init__()
-        self.content_encoder = Encoder(input_nc, ngf, is_content=True)
-        self.style_encoder = Encoder(input_nc, ngf, is_content=False)
+        self.content_input_nc = content_input_nc
+        self.style_input_nc = style_input_nc
+        self.ngf = ngf
+        self.gpu_id = gpu_id
+        self.content_encoder = Encoder(
+            self.content_input_nc, self.ngf, is_content=True)
+        self.style_encoder = Encoder(
+            self.style_input_nc, self.ngf, is_content=False)
+        self.decoder = Decoder()
 
-    def forward(self, ):
-        pass
+    def print_networks(self, verbose=False):
+        """Print the total number of parameters in the network and (if verbose) network architecture
+        Parameters:
+            verbose (bool) -- if verbose: print the network architecture
+        """
+        print('---------- Networks initialized -------------')
+        for name in ['style_encoder', 'decoder']:
+            if isinstance(name, str):
+                net = getattr(self, name)
+                num_params = 0
+                for param in net.parameters():
+                    num_params += param.numel()
+                if verbose:
+                    print(net)
+                print(
+                    '[Network %s] Total number of parameters : %.3f M' %
+                    (name, num_params / 1e6))
+        print('-----------------------------------------------')
+
+    def save_networks(self, save_dir, epoch):
+        save_file_name = f'{epoch}.pth'
+        save_path = os.path.join(save_dir, save_file_name)
+        torch.save(self.state_dict(), save_path)
+
+    def sample(self, content, style, basename):
+        count = 0
+        with torch.no_grad():
+            output = self.forward(content, style)
+            for _output in output:
+                vutils.save_image(
+                    _output,
+                    os.path.join(basename, f'{count}.png')
+                )
+            count += 1
+        return output
+
+    def forward(self, content, style):
+        c1, c2, c3, c4, c5, c6, c7, _content = self.content_encoder(content)
+        _style = self.style_encoder(style)
+        x = self.decoder(_content, _style, c1, c2, c3, c4, c5, c6, c7)
+        return x
 
 
 class Encoder(nn.Module):
@@ -180,7 +235,7 @@ class Decoder(nn.Module):
         """
         batch_size, _, _, _ = content.shape
         batch_size_, _, _, _ = style.shape
-        assert batch_size == batch_size_
+        assert batch_size == batch_size_, f"batch size of content and style must be equal. {batch_size} != {batch_size_}"
 
         _style = torch.reshape(style, (batch_size, 512))
         _content = torch.reshape(content, (batch_size, 512))

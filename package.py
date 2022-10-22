@@ -3,6 +3,7 @@ import os
 import pickle
 import random
 from tqdm import tqdm
+import argparse
 
 
 def pickle_examples_with_split_ratio(
@@ -57,3 +58,16 @@ def package(
         val_path=val_path,
         train_val_split=train_test_split_ratio
     )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser('Package')
+    parser.add_argument('--dir', type=str, default='dir')
+    parser.add_argument(
+        '--save_dir',
+        type=str,
+        default='experiment/content_data')
+    parser.add_argument('--train_test_split_ratio', type=float, default=0.2)
+    args = parser.parse_args()
+    package(dir=args.dir, save_dir=args.save_dir,
+            train_test_split_ratio=args.train_test_split_ratio)

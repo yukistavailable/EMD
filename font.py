@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import json
 import collections
+import argparse
 
 from torch import nn
 from torchvision import transforms
@@ -324,3 +325,29 @@ def generate_same_font_data(
         os.makedirs(sample_dir)
 
     same_font(font, charset, char_num=char_num, sample_dir=sample_dir)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Font2Img')
+    parser.add_argument('--charset', type=str, default='JP')
+    parser.add_argument('--font', type=str, default='JP')
+    parser.add_argument('--fonts', default=[], nargs='+')
+    parser.add_argument('--sample_dir', type=str, default='style_dir')
+    parser.add_argument('--sample_count', type=int, default=2100)
+    parser.add_argument('--shuffle', type=bool, default=True)
+    parser.add_argument('--char_num', type=int, default=5)
+    args = parser.parse_args()
+
+    if args.fonts:
+        generate_paired_data(
+            fonts=args.fonts,
+            charset=args.charset,
+            sample_dir=args.sample_dir,
+            sample_count=args.sample_count)
+    else:
+        generate_same_font_data(
+            font=args.font,
+            charset=args.charset,
+            sample_dir=args.sample_dir,
+            shuffle=args.shuffle,
+            char_num=args.char_num)

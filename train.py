@@ -118,7 +118,7 @@ def main(
             shuffle=True).__iter__()
 
         for bid, content_batch in enumerate(content_dataloader):
-            style_batch = next(style_dataloader_iter).to(gpu_id)
+            style_batch = next(style_dataloader_iter)
             if len(style_batch) < batch_size:
                 style_dataloader_iter = DataLoader(
                     train_style_dataset,
@@ -126,7 +126,7 @@ def main(
                     shuffle=True).__iter__()
                 style_batch = next(style_dataloader_iter)
             ground_truth = content_batch[0].to(gpu_id)
-            x = model(content_batch[1].to(gpu_id), style_batch)
+            x = model(content_batch[1].to(gpu_id), style_batch.to(gpu_id))
             if x is None:
                 print(
                     f'Epoch {epoch} batch {bid} failed due to inconsistent batch size')

@@ -118,15 +118,15 @@ def main(
             shuffle=True).__iter__()
 
         for bid, content_batch in enumerate(content_dataloader):
-            style_batch = next(style_dataloader_iter)
+            style_batch = next(style_dataloader_iter).to(gpu_id)
             if len(style_batch) < batch_size:
                 style_dataloader_iter = DataLoader(
                     train_style_dataset,
                     batch_size=batch_size,
                     shuffle=True).__iter__()
                 style_batch = next(style_dataloader_iter)
-            ground_truth = content_batch[0]
-            x = model(content_batch[1], style_batch)
+            ground_truth = content_batch[0].to(gpu_id)
+            x = model(content_batch[1].to(gpu_id), style_batch)
             loss = l1_loss(ground_truth, x)
             optimizer.zero_grad()
             loss.backward()
@@ -146,12 +146,12 @@ def main(
             if epoch % sample_steps == 0:
                 val_style_dataloader_iter = val_style_dataloader.__iter__()
                 for vbid, val_batch in enumerate(val_content_dataloader):
-                    style_val = next(val_style_dataloader_iter)
+                    style_val = next(val_style_dataloader_iter).to(gpu_id)
                     if len(style_val) < batch_size:
                         val_style_dataloader_iter = val_style_dataloader.__iter__()
                         style_val = next(val_style_dataloader_iter)
                     ground_truth_val = val_batch[0]
-                    content_val = val_batch[1]
+                    content_val = val_batch[1].to(gpu_id)
                     basename = os.path.join(sample_dir, str(epoch))
                     chkormakedir(basename)
                     model.sample(
@@ -162,9 +162,9 @@ def main(
 
     val_style_dataloader_iter = val_style_dataloader.__iter__()
     for vbid, val_batch in enumerate(val_content_dataloader):
-        style_val = next(val_style_dataloader_iter)
+        style_val = next(val_style_dataloader_iter).to(gpu_id)
         ground_truth_val = val_batch[0]
-        content_val = val_batch[1]
+        content_val = val_batch[1].to(gpu_id)
         basename = os.path.join(sample_dir, str(epoch))
         chkormakedir(basename)
         model.sample(

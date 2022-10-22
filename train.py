@@ -146,7 +146,7 @@ def main(
             if epoch % sample_steps == 0:
                 val_style_dataloader_iter = val_style_dataloader.__iter__()
                 for vbid, val_batch in enumerate(val_content_dataloader):
-                    style_val = next(val_style_dataloader_iter).to(gpu_id)
+                    style_val = next(val_style_dataloader_iter)
                     if len(style_val) < batch_size:
                         val_style_dataloader_iter = val_style_dataloader.__iter__()
                         style_val = next(val_style_dataloader_iter)
@@ -155,7 +155,7 @@ def main(
                     basename = os.path.join(sample_dir, str(epoch))
                     chkormakedir(basename)
                     model.sample(
-                        content_val, style_val, basename)
+                        content_val, style_val.to(gpu_id), basename)
                 print("Sample: sample step %d" % epoch)
         if (epoch + 1) % schedule == 0:
             update_lr(optimizer_params=optimizer.param_groups)

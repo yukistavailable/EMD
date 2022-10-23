@@ -75,7 +75,8 @@ def main(
     model.print_networks(True)
 
     if resume:
-        model.load_networks(resume)
+        load_dir = os.path.join(check_point_dir, f'{resume}.pth')
+        model.load_networks(load_dir)
 
     # val dataset load only once, no shuffle
     val_content_dataset = ContentDatasetFromObj(

@@ -48,6 +48,10 @@ class EMD(nn.Module):
         save_path = os.path.join(save_dir, save_file_name)
         torch.save(self.state_dict(), save_path)
 
+    def load_networks(self, load_dir):
+        load_path = os.path.join(load_dir)
+        self.load_state_dict(torch.load(load_path))
+
     def sample(self, content, style, basename):
         count = 0
         with torch.no_grad():
